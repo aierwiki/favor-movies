@@ -70,9 +70,9 @@ Page({
         } else {
           // 用户没有授权
           // 改变 isHide 的值，显示授权页面
-          self.setData({
-            isHide: true
-          });
+          //self.setData({
+          //  isHide: true
+          //});
         }
       }
     })
