@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 
+PRIVATE_PATH='../../../favor-movie-private/'
 POOL = redis.ConnectionPool(host='127.0.0.1', port=6379, max_connections=100)
 client_redis = redis.Redis(connection_pool=POOL)
 
@@ -22,8 +23,9 @@ class Login(restful.Resource):
         parser.add_argument('code', type=str, help='code to get openid')
         args = parser.parse_args()
         code = args['code']
+        config = json.load(open(os.path.join(PRIVATE_PATH, 'config.json')))
         rsp = requests.get(url='https://api.weixin.qq.com/sns/jscode2session',
-                        params={'appid':'wx7e675152b117e416', 'secret':'043f00f281f39e5d7dc07b4944f41dca',
+                        params={'appid':config['appid'], 'secret':config['secret'],
                                 'js_code':code, 'grant_type':'authorization_code'})
         openid = rsp.json()['openid']
         return {'result':0, 'openid':openid}
@@ -120,7 +122,6 @@ def main():
     api.add_resource(Dislike, '/dislike/<openid>')
     api.add_resource(Favorite, '/favorite/<openid>')
     api.add_resource(ClearFavor, '/clear/<openid>')
-    PRIVATE_PATH='../../../favor-movie-private/'
     #app.run(host='0.0.0.0', port=443, debug=True, ssl_context=(os.path.join(PRIVATE_PATH, '3098862_fishmovie.top.pem'),
     app.run(host='0.0.0.0', port=8080, debug=True)
 if __name__ == '__main__':
