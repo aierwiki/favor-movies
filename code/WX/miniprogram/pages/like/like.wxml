@@ -1,6 +1,6 @@
 
 <view class="container">
-    <scroll-view wx:if="{{!isEmpty}}" class="list" scroll-y="true" style="height:{{windowHeight}}px;" bindscrolltolower="lower" enable-flex="true">
+    <scroll-view wx:if="{{!isEmpty}}" class="list" scroll-y="true" style="height:{{windowHeight}}px;" bindscrolltolower="lower">
         <view class="movie" wx:for="{{movieData}}" wx:for-item="item" wx:key="movieId">
             <image class="pic" src="{{item.smallPicUrl}}"></image>
             <view class="box">
