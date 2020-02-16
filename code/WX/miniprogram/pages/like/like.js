@@ -16,47 +16,34 @@ Page({
     wx.setNavigationBarTitle({
       title: '我的心愿单'
     })
-    console.log(app)
-    if (typeof app.globalData.openid != 'undefined') {
-      this.loadFavorateData(app.globalData.openid)
-    }
+    this.loadFavorateData()
   },
-  loadFavorateData: function (openid) {
-    //const app = getApp()
-    //console.log(app.globalData)
-    //const openid = this.globalData.openid
-    //if (typeof app.globalData.openid != "undefined")
-    if (true) {
-      const requestTask = wx.request({
-        url: 'https://fishmovie.top/favorite/' + openid,
-        data: {
-        },
-        method: "get",
-        header: {
-          'content-type': 'application/json'
-        },
-        success: res => {
-          console.log(res.data)
-          for (var j = 0, len = res.data.movieData.length; j < len; j++) {
-            res.data.movieData[j].zIndex = len - j;
-            res.data.movieData[j].isRender = 1
-            res.data.movieData[j].animationData = 0
-          }
-          var isLoadingEnd = false;
-          if (res.data.movieData.length == 0) {
-            isLoadingEnd = true;
-          }
-          this.setData({
-            movieData: res.data.movieData,
-            curShowIdx: 0,
-            slideTimes: 0,
-            isEmpty: false,
-            isLoadingEnd: isLoadingEnd
-          })
-          wx.hideLoading()
+  loadFavorateData: function () {
+    wx.cloud.callFunction({
+      name: "favorite",
+      data: {
+      },
+      complete: res => {
+        console.log(res.result)
+        for (var j = 0, len = res.result.movieData.length; j < len; j++) {
+          res.result.movieData[j].zIndex = len - j;
+          res.result.movieData[j].isRender = 1
+          res.result.movieData[j].animationData = 0
         }
-      })
-    }
+        var isLoadingEnd = false;
+        if (res.result.movieData.length == 0) {
+          isLoadingEnd = true;
+        }
+        this.setData({
+          movieData: res.result.movieData,
+          curShowIdx: 0,
+          slideTimes: 0,
+          isEmpty: false,
+          isLoadingEnd: isLoadingEnd
+        })
+        wx.hideLoading()
+      }
+    })
   },
   lower: function () {
     /*

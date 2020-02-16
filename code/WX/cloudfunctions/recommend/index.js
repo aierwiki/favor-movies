@@ -1,49 +1,84 @@
 // 云函数入口文件
 const cloud = require('wx-server-sdk')
-cloud.init()
+
+// 初始化 cloud
+cloud.init({
+  // API 调用都保持和云函数当前所在环境一致
+  env: cloud.DYNAMIC_CURRENT_ENV
+})
 
 // 云函数入口函数
+//返回20个推荐电影
 exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext()
-  //let url = 'https://www.baidu.com'
-  /*
-  return await rp(url)
-    .then(function(res){
-      return res
-    })
-    .catch(function(err){
-      return 'fail'
-    })
-  */
+  const openid = wxContext.OPENID
+  const db = cloud.database({
+    throwOnNotFound: false
+  })
+  
+  let candidate_movies = []
+  // 召回：热门召回
+  await db.collection('hot_movies').limit(100).field({movieId: true}).get().then(res => {
+    for (var i = 0; i < res.data.length; i++) {
+      candidate_movies.push(res.data[i]['movieId'])
+    }
+  })
+  console.log("hot recall :" + candidate_movies)
+  // 召回：ItemCF召回
+  let favor_movies = []
+  await db.collection('like').doc(openid).get().then(res => {
+    if (res.data != null){
+      favor_movies = res.data['movies']
+    }
+  })
+  let similar_movies = []
+  const _ = db.command
+  await db.collection('similar_movies').where({ movieId: _.in(favor_movies)}).field({similar_movies:true})
+      .get().then(res => {
+        for (var i = 0; i < res.data.length; i++) {
+          similar_movies = similar_movies.concat(res.data[i]['similar_movies'].slice(0, 10))
+        }
+        candidate_movies = candidate_movies.concat(similar_movies)
+      })
+  console.log("hot and similar movies:" + candidate_movies)
+  // 去重：喜欢过的和不喜欢过的都要去掉
+  let dislike_movies = []
+  await db.collection('dislike').doc(openid).get().then(res => {
+    if (res.data !=  null){
+      dislike_movies = res.data['movies']
+    }
+  })
+  console.log('favor_movies: ' + favor_movies)
+  console.log('dislike_movies: ' + dislike_movies)
+  const recall_recommend_movies = []
+  for (var i = 0; i < candidate_movies.length; i++) {
+    if (candidate_movies[i] in favor_movies) {
+      continue;
+    }
+    if (candidate_movies[i] in dislike_movies) {
+      continue;
+    }
+    recall_recommend_movies.push(candidate_movies[i])
+  }
+  console.log("recall_recommend_movies:" + recall_recommend_movies)
+  // 排序：暂时随机排序
+  const rank_recommend_movies = []
+  while (rank_recommend_movies.length < Math.min(recall_recommend_movies.length, 20)) {
+    let i = Math.floor(Math.random() * (recall_recommend_movies.length - 1));
+    if (rank_recommend_movies.indexOf(recall_recommend_movies[i]) == -1) {
+      rank_recommend_movies.push(recall_recommend_movies[i])
+    }
+  }
+  console.log("rank_recommend_movies:" + rank_recommend_movies)
+  let recommend_movies = []
+  await db.collection('all_movies').where({'movieId': _.in(rank_recommend_movies)}).get().then(res => {
+    recommend_movies = res.data
+  })
   return {
     event,
     openid: wxContext.OPENID,
     appid: wxContext.APPID,
     unionid: wxContext.UNIONID,
-    movieData: [
-      {
-        name: 'PAN',
-        score: 9.2,
-        picUrl: 'http://getimdb.com/posters/tt3332064.jpg',
-        zIndex: 10000,
-        isRender: true,
-        animationData: null
-      },
-      {
-        name: 'TEST1',
-        score: 8.2,
-        picUrl: 'http://getimdb.com/posters/tt1816608.jpg',
-        zIndex: 9999,
-        isRender: true,
-        animationData: null
-      },
-      {
-        name: 'TEST1',
-        score: 7.2,
-        picUrl: 'http://getimdb.com/posters/tt2717822.jpg',
-        zIndex: 9998,
-        isRender: true,
-        animationData: null
-      }]
+    movieData: recommend_movies
   }
 }

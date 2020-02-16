@@ -26,34 +26,7 @@ Page({
     wx.showLoading({
       title: '加载中...',
     })
-    //从后台获取用户的openid
-    var self = this
-    wx.login({
-      success(res) {
-        if (res.code) {
-          //发起网络请求
-          wx.request({
-            url: 'https://fishmovie.top/login',
-            data: {
-              code: res.code
-            },
-            method: "post",
-            success: res => {
-              console.log(res.data)
-              if (res.data.result == 0) {
-                app.globalData.openid = res.data.openid
-                self.loadRecommendData(res.data.openid)
-              } else {
-                console.log('后台获取openid失败！')
-              }
-            }
-          })
-        } else {
-          console.log('登录失败！' + res.errMsg)
-        }
-      }
-    })
-
+    this.loadRecommendData()
     // 获取用户信息
     wx.getSetting({
       success: res => {
@@ -77,42 +50,30 @@ Page({
       }
     })
   },
-  loadRecommendData: function (openid) {
-    //const app = getApp()
-    //console.log(app.globalData)
-    //const openid = this.globalData.openid
-    //if (typeof app.globalData.openid != "undefined")
-    if (true)
-    {
-      const requestTask = wx.request({
-        url: 'https://fishmovie.top/recommend/' + openid,
-        data: {
-        },
-        method: "get",
-        header: {
-          'content-type': 'application/json'
-        },
-        success: res => {
-          console.log(res.data)
-          for (var j = 0, len = res.data.movieData.length; j < len; j++) {
-            res.data.movieData[j].zIndex = len - j;
-            res.data.movieData[j].isRender = 1
-            res.data.movieData[j].animationData = 0
-          }
-          var isLoadingEnd = false;
-          if (res.data.movieData.length == 0) {
-            isLoadingEnd = true;
-          }
-          this.setData({
-            movieData: res.data.movieData,
-            curShowIdx: 0,
-            slideTimes: 0,
-            isLoadingEnd: isLoadingEnd
-          })
-          wx.hideLoading()
+  loadRecommendData: function () {
+    wx.cloud.callFunction({
+      name: 'recommend',
+      data: {},
+      complete: res => {
+        console.log(res)
+        for (var j = 0, len = res.result.movieData.length; j < len; j++)         {
+          res.result.movieData[j].zIndex = len - j;
+          res.result.movieData[j].isRender = 1
+          res.result.movieData[j].animationData = 0
         }
-      })
-    }
+        var isLoadingEnd = false;
+        if (res.result.movieData.length == 0) {
+          isLoadingEnd = true;
+        }
+        this.setData({
+          movieData: res.result.movieData,
+          curShowIdx: 0,
+          slideTimes: 0,
+          isLoadingEnd: isLoadingEnd
+        })
+        wx.hideLoading()
+      }
+    })
   },
   touchStart: function (e) {
     touch.startPoint = e.touches[0];
@@ -264,27 +225,23 @@ Page({
       this.setData({
         isLoadingEnd: true
       })
-      this.loadRecommendData(app.globalData.openid)
+      this.loadRecommendData()
     }
   },
   recordHistory: function(param) {
-    var url = ""
+    let func_name = 'like'
     if (param == 'left') {
-      url = 'https://fishmovie.top/dislike/' + app.globalData.openid
+      func_name = 'dislike'
     } else {
-      url = 'https://fishmovie.top/like/' + app.globalData.openid
+      func_name = 'like'
     }
-    const requestTask = wx.request({
-      url: url,
+    wx.cloud.callFunction({
+      name: func_name,
       data: {
-        movieid: this.data.movieData[this.data.curShowIdx].movieId
+        movieId: this.data.movieData[this.data.curShowIdx].movieId
       },
-      method: "get",
-      header: {
-        'content-type': 'application/json'
-      },
-      success: res => {
-        console.log(res.data.result)
+      complete: res => {
+        console.log(res)
       }
     })
   },
