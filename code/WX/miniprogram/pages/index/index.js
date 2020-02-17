@@ -58,7 +58,11 @@ Page({
         console.log(res)
         for (var j = 0, len = res.result.movieData.length; j < len; j++)         {
           res.result.movieData[j].zIndex = len - j;
-          res.result.movieData[j].isRender = 1
+          if (j == 0) {
+            res.result.movieData[j].isRender = 1
+          } else {
+            res.result.movieData[j].isRender = 0
+          }
           res.result.movieData[j].animationData = 0
         }
         var isLoadingEnd = false;
@@ -111,6 +115,9 @@ Page({
     this.animation.rotate(rotate).translate(translateX, 10).step();
     let id = this.data.curShowIdx;
     movieData = this.data.movieData;
+    if (id < movieData.length - 1) {
+      movieData[id + 1].isRender = 1
+    }
     movieData[id].animationData = this.animation.export();
     this.setData({
       movieData
