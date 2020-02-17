@@ -17,7 +17,7 @@ exports.main = async (event, context) => {
     if (res.data == null) {
       movies = [event.movieId]
     } else {
-      if (res.data['movies'].length >= 20) {
+      if (res.data['movies'].length >= 500) {
         movies = res.data['movies'].slice(1)
         movies.push(event.movieId)
       }

@@ -206,12 +206,9 @@ Page({
 
   markAsRead: function (param) {
     let id = this.data.curShowIdx;
-    console.log('id=' + id)
     let movieData = this.data.movieData;
     let slideTimes = this.data.slideTimes;
     slideTimes++;
-    console.log('movie len=' + this.data.movieData.length)
-    console.log('slide times=' + slideTimes)
     // 保存到后端
     this.recordHistory(param)
     let nextId = this.data.curShowIdx + 1;
@@ -241,7 +238,7 @@ Page({
         movieId: this.data.movieData[this.data.curShowIdx].movieId
       },
       complete: res => {
-        console.log(res)
+        //console.log(res)
       }
     })
   },

@@ -18,7 +18,7 @@ exports.main = async (event, context) => {
   
   let candidate_movies = []
   // 召回：热门召回
-  await db.collection('hot_movies').limit(100).field({movieId: true}).get().then(res => {
+  await db.collection('hot_movies').limit(500).field({movieId: true}).get().then(res => {
     for (var i = 0; i < res.data.length; i++) {
       candidate_movies.push(res.data[i]['movieId'])
     }
@@ -36,7 +36,7 @@ exports.main = async (event, context) => {
   await db.collection('similar_movies').where({ movieId: _.in(favor_movies)}).field({similar_movies:true})
       .get().then(res => {
         for (var i = 0; i < res.data.length; i++) {
-          similar_movies = similar_movies.concat(res.data[i]['similar_movies'].slice(0, 10))
+          similar_movies = similar_movies.concat(res.data[i]['similar_movies'].slice(0, 100))
         }
         candidate_movies = candidate_movies.concat(similar_movies)
       })
@@ -48,14 +48,15 @@ exports.main = async (event, context) => {
       dislike_movies = res.data['movies']
     }
   })
-  console.log('favor_movies: ' + favor_movies)
-  console.log('dislike_movies: ' + dislike_movies)
+  //console.log('favor_movies: ' + favor_movies)
+  //console.log('dislike_movies: ' + dislike_movies)
+ //console.log('candidate_movies: ' + candidate_movies)
   const recall_recommend_movies = []
   for (var i = 0; i < candidate_movies.length; i++) {
-    if (candidate_movies[i] in favor_movies) {
+    if (favor_movies.includes(candidate_movies[i])) {
       continue;
     }
-    if (candidate_movies[i] in dislike_movies) {
+    if (dislike_movies.includes(candidate_movies[i])) {
       continue;
     }
     recall_recommend_movies.push(candidate_movies[i])
