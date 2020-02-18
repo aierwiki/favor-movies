@@ -58,7 +58,7 @@ Page({
         console.log(res)
         for (var j = 0, len = res.result.movieData.length; j < len; j++)         {
           res.result.movieData[j].zIndex = len - j;
-          if (j == 0) {
+          if (j < 2) {
             res.result.movieData[j].isRender = 1
           } else {
             res.result.movieData[j].isRender = 0
@@ -69,15 +69,46 @@ Page({
         if (res.result.movieData.length == 0) {
           isLoadingEnd = true;
         }
-        this.setData({
-          movieData: res.result.movieData,
-          curShowIdx: 0,
-          slideTimes: 0,
-          isLoadingEnd: isLoadingEnd
-        })
-        wx.hideLoading()
+        this.downloadPicture(res.result.movieData)
       }
     })
+  },
+  downloadPicture: function (movieData) {
+    let fileList = []
+    for (var i = 0; i < movieData.length; i++) {
+      let picUrl = movieData[i].picUrl
+      //console.log("origin picUrl:" + movieData[i].picUrl)
+      let filename = picUrl.split('/').pop()
+      let fileid = 'cloud://favor-movies-nj6pp.6661-favor-movies-nj6pp-1300680160/pictures/' + filename;
+      fileList.push(fileid)
+    }
+    let self = this
+    wx.cloud.getTempFileURL({
+      fileList: fileList,
+      success: res => {
+        for (var i = 0; i < movieData.length; i++) {
+          if (res.fileList[i].status == 0) {
+            movieData[i].picUrl = res.fileList[i].tempFileURL
+          }
+        }
+        self.setDataAndHideLoading(movieData)
+      },
+      fail: err => {
+        // handle error
+        console.log('download error')
+        console.log(err)
+        self.setDataAndHideLoading(movieData)
+      }
+    })
+  },
+  setDataAndHideLoading: function (movieData) {
+    this.setData({
+      movieData: movieData,
+      curShowIdx: 0,
+      slideTimes: 0,
+      isLoadingEnd: false
+    })
+    wx.hideLoading()
   },
   touchStart: function (e) {
     touch.startPoint = e.touches[0];
@@ -115,13 +146,11 @@ Page({
     this.animation.rotate(rotate).translate(translateX, 10).step();
     let id = this.data.curShowIdx;
     movieData = this.data.movieData;
-    if (id < movieData.length - 1) {
-      movieData[id + 1].isRender = 1
-    }
+    
     movieData[id].animationData = this.animation.export();
     this.setData({
       movieData
-    })
+    }) //4nvzqm
 
   },
   // 触摸结束事件
@@ -214,6 +243,9 @@ Page({
   markAsRead: function (param) {
     let id = this.data.curShowIdx;
     let movieData = this.data.movieData;
+    if (id < movieData.length - 2) {
+      movieData[id + 2].isRender = 1
+    }
     let slideTimes = this.data.slideTimes;
     slideTimes++;
     // 保存到后端
@@ -228,6 +260,9 @@ Page({
       console.log('slide finished!')
       this.setData({
         isLoadingEnd: true
+      })
+      wx.showLoading({
+        title: '加载中...',
       })
       this.loadRecommendData()
     }

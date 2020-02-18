@@ -19,6 +19,7 @@ Page({
     this.loadFavorateData()
   },
   loadFavorateData: function () {
+    let self = this
     wx.cloud.callFunction({
       name: "favorite",
       data: {
@@ -30,20 +31,51 @@ Page({
           res.result.movieData[j].isRender = 1
           res.result.movieData[j].animationData = 0
         }
-        var isLoadingEnd = false;
-        if (res.result.movieData.length == 0) {
-          isLoadingEnd = true;
-        }
-        this.setData({
-          movieData: res.result.movieData,
-          curShowIdx: 0,
-          slideTimes: 0,
-          isEmpty: false,
-          isLoadingEnd: isLoadingEnd
-        })
-        wx.hideLoading()
+        self.downloadPicture(res.result.movieData)
       }
     })
+  },
+  downloadPicture: function (movieData) {
+    let fileList = []
+    for (var i = 0; i < movieData.length; i++) {
+      let picUrl = movieData[i].picUrl
+      //console.log("origin picUrl:" + movieData[i].picUrl)
+      let filename = picUrl.split('/').pop()
+      let fileid = 'cloud://favor-movies-nj6pp.6661-favor-movies-nj6pp-1300680160/pictures/' + filename;
+      fileList.push(fileid)
+    }
+    let self = this
+    wx.cloud.getTempFileURL({
+      fileList: fileList,
+      success: res => {
+        for (var i = 0; i < movieData.length; i++) {
+          if (res.fileList[i].status == 0) {
+            movieData[i].smallPicUrl = res.fileList[i].tempFileURL
+          }
+        }
+        self.setDataAndHideLoading(movieData)
+      },
+      fail: err => {
+        // handle error
+        console.log('download error')
+        console.log(err)
+        self.setDataAndHideLoading(movieData)
+      }
+    })
+  },
+  setDataAndHideLoading: function (movieData) {
+    var isLoadingEnd = false;
+    if (movieData.length == 0) {
+      isLoadingEnd = true;
+    }
+    this.setData({
+      movieData: movieData,
+      curShowIdx: 0,
+      slideTimes: 0,
+      isEmpty: false,
+      isLoadingEnd: isLoadingEnd
+    })
+    wx.hideLoading()
   },
   lower: function () {
     /*
